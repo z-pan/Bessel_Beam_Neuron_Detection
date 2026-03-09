@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Data (not committed)
+data/
+
+# IDE
+.vscode/
+.idea/
+
+# Notebooks
+.ipynb_checkpoints/

@@ -1,0 +1,4 @@
+torch>=1.12        # DeepCAD denoising
+napari>=0.4.17     # Interactive visualization
+cellpose>=2.0      # Alternative DL segmentation
+suite2p>=0.13      # Registration reference
