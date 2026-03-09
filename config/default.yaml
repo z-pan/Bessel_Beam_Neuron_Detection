@@ -1,0 +1,66 @@
+preprocessing:
+  baseline_percentile: 10
+  registration_method: "phase_correlation"
+  registration_upsample: 10
+  photobleach_correction: "linear"    # MANDATORY: 9/10 datasets lose 16-37% intensity
+
+deepcad:
+  enabled: true
+  patch_xy: 150
+  patch_t: 40
+  epochs: 30
+  batch_size: 1
+  lr: 0.00005
+
+background:
+  # NOTE: CV/presence mask approach FAILED on real data (returned all zeros).
+  # Use illumination masking + local subtraction instead.
+  illumination_threshold_percentile: 5
+  local_bg_radius: 50
+  band_artifact_suppression: true
+
+edi:
+  sigma_weight: 0.4
+  maxproj_weight: 0.4
+  corr_weight: 0.2
+
+detection:
+  min_sigma: 1.0              # Measured: p10 sigma = 1.22
+  max_sigma: 5.0              # Measured: p90 sigma = 4.28
+  num_sigma: 8
+  threshold: 0.03
+  overlap: 0.5
+  local_snr_threshold: 0.4    # Measured: paired p10 SNR = 0.41
+
+pairing:
+  horizontal_dist_min: 25            # Measured: p10 = 29.8
+  horizontal_dist_max: 60            # Measured: p90 = 55.0
+  ideal_distance: 43.0               # Measured median from 689 confirmed pairs
+  vertical_offset_max: 5
+  intensity_ratio_range: [0.25, 4.0]
+  scale_diff_max: 0.4
+  temporal_correlation_min: 0.3   # Both spots must co-activate
+  cost_weights:
+    distance: 0.3
+    intensity: 0.2
+    scale: 0.2
+    temporal_correlation: 0.3
+
+clustering:
+  eps: 8.0
+  min_samples: 3              # Restored: ~20-30 events × 3-7 frames = many detections per neuron
+
+temporal_validation:
+  # Calibrated from volume_001 annotations:
+  # Individual entries: 1-7 frames. Event clusters: 1-21 frames, median=4.
+  min_peak_dff: 0.20                 # Measured: paired p10 ΔF/F₀ = 0.206
+  min_rise_frames: 1
+  min_decay_frames: 1
+  max_event_duration: 10      # Single neuron event; clusters can be longer
+  max_active_fraction: 0.5    # Reject if active >50% of frames
+  event_window: 7             # Matches observed typical event span
+
+refinement:
+  gaussian_fit_radius: 8      # Measured: median spot sigma = 2.5
+  top_k_frames: 10            # Pick best frames from ~20-30 events × 3-7 frames
+  min_confidence: 0.3
