@@ -218,7 +218,31 @@ def validate_calcium_dynamics(
 
     for cluster_idx, cluster in enumerate(clusters):
         cy, cx = _cluster_centre(cluster)
-        trace = _extract_trace(dff, cy, cx)
+
+        # For paired neurons the cluster centre lies midway between the two spots
+        # (spacing ~43 px >> 3σ ≈ 7.5 px), so the centre position has little to no
+        # dFF signal.  To handle both paired neurons (signal at spot positions) and
+        # the degenerate case where signal is centred at the midpoint, we extract
+        # traces at the cluster centre AND at every individual spot position, then
+        # take the element-wise maximum across all positions.
+        candidate_positions: list[tuple[float, float]] = [(cy, cx)]  # centre first
+        for p in cluster:
+            candidate_positions.append((p.left.y, p.left.x))
+            candidate_positions.append((p.right.y, p.right.x))
+
+        # Deduplicate positions within _ROI_RADIUS of each other
+        unique_positions: list[tuple[float, float]] = []
+        for pos in candidate_positions:
+            if not any(
+                math.hypot(pos[0] - up[0], pos[1] - up[1]) < _ROI_RADIUS
+                for up in unique_positions
+            ):
+                unique_positions.append(pos)
+
+        all_traces = np.stack(
+            [_extract_trace(dff, py, px) for py, px in unique_positions], axis=0
+        )
+        trace = all_traces.max(axis=0)  # (T,) element-wise max across positions
 
         # --- Gate 1: Persistent background rejection ---
         peak_dff = float(trace.max())
