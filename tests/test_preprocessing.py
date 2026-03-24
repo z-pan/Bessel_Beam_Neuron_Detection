@@ -355,3 +355,27 @@ class TestDeepCadDenoise:
         with patch.dict(sys.modules, {"deepcad": None}):
             result = deepcad_denoise(stack, cfg)
         np.testing.assert_array_equal(result, stack)
+
+    def test_deepcad_api_failure_falls_back(self):
+        """When deepcad is installed but API fails, should fall back gracefully."""
+        import sys
+        import types
+        from unittest.mock import patch
+
+        from bessel_seg.preprocessing.denoise import deepcad_denoise
+
+        stack = _make_stack()
+        cfg = DeepCADConfig(enabled=True)
+
+        # Simulate deepcad installed but train_collection missing
+        fake_deepcad = types.ModuleType("deepcad")
+        fake_torch = types.ModuleType("torch")
+        with patch.dict(sys.modules, {
+            "deepcad": fake_deepcad,
+            "torch": fake_torch,
+            "deepcad.train_collection": None,
+        }):
+            result = deepcad_denoise(stack, cfg)
+        # Should return a denoised result (via fallback) with same shape
+        assert result.shape == stack.shape
+        assert result.dtype == np.float32
